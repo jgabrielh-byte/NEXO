@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/jgabrielh-byte/NEXO/issues"
   },
-  "homepage": "https://github.com/jgabrielh-byte/NEXO#readme"
+  "homepage": "https://github.com/jgabrielh-byte/NEXO#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
 }
