@@ -1,0 +1,21 @@
+{
+  "name": "nexo",
+  "version": "1.0.0",
+  "description": "Aplicación personal de organización y productividad.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jgabrielh-byte/NEXO.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jgabrielh-byte/NEXO/issues"
+  },
+  "homepage": "https://github.com/jgabrielh-byte/NEXO#readme"
+}
