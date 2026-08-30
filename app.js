@@ -50,7 +50,7 @@ function setupEventListeners() {
   });
 }
 
-// Cargar y mostrar Tareas
+// Cargar Tareas
 async function loadTasks() {
   try {
     const res = await fetch('/api/tasks');
@@ -65,11 +65,12 @@ async function loadTasks() {
     container.innerHTML = data.map(task => `
       <div class="p-2 bg-slate-700/50 rounded flex justify-between items-center text-xs">
         <span class="${task.completed ? 'line-through text-slate-500' : ''}">${task.title}</span>
-        <div class="space-x-1">
-          <button onclick="toggleTask(${task.id})" class="px-1.5 py-0.5 rounded ${task.completed ? 'bg-slate-600 text-slate-400' : 'bg-emerald-600/30 text-emerald-400 hover:bg-emerald-600/50'}">
+        <div class="space-x-1 flex items-center">
+          <button onclick="editTask('${task._id}', '${task.title}')" class="px-1.5 py-0.5 rounded bg-amber-600/30 text-amber-400 hover:bg-amber-600/50">✏️</button>
+          <button onclick="toggleTask('${task._id}')" class="px-1.5 py-0.5 rounded ${task.completed ? 'bg-slate-600 text-slate-400' : 'bg-emerald-600/30 text-emerald-400 hover:bg-emerald-600/50'}">
             ${task.completed ? '✓' : '⌛'}
           </button>
-          <button onclick="deleteTask(${task.id})" class="px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-400 hover:bg-rose-600/50">✕</button>
+          <button onclick="deleteTask('${task._id}')" class="px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-400 hover:bg-rose-600/50">✕</button>
         </div>
       </div>
     `).join('');
@@ -78,7 +79,7 @@ async function loadTasks() {
   }
 }
 
-// Cargar y mostrar Notas
+// Cargar Notas
 async function loadNotes() {
   try {
     const res = await fetch('/api/notes');
@@ -92,11 +93,14 @@ async function loadNotes() {
 
     container.innerHTML = data.map(note => `
       <div class="p-2 bg-slate-700/50 rounded flex justify-between items-start text-xs">
-        <div class="space-y-0.5">
+        <div class="space-y-0.5 pr-2">
           <h3 class="font-semibold text-slate-200">${note.title}</h3>
           <p class="text-[11px] text-slate-400">${note.content}</p>
         </div>
-        <button onclick="deleteNote(${note.id})" class="px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-400 hover:bg-rose-600/50 ml-2">✕</button>
+        <div class="space-x-1 flex items-center shrink-0">
+          <button onclick="editNote('${note._id}', '${note.title}', '${note.content}')" class="px-1.5 py-0.5 rounded bg-amber-600/30 text-amber-400 hover:bg-amber-600/50">✏️</button>
+          <button onclick="deleteNote('${note._id}')" class="px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-400 hover:bg-rose-600/50">✕</button>
+        </div>
       </div>
     `).join('');
   } catch (err) {
@@ -104,7 +108,7 @@ async function loadNotes() {
   }
 }
 
-// Cargar y mostrar Recordatorios
+// Cargar Recordatorios
 async function loadReminders() {
   try {
     const res = await fetch('/api/reminders');
@@ -122,11 +126,12 @@ async function loadReminders() {
           <p class="${reminder.completed ? 'line-through text-slate-500' : ''}">${reminder.title}</p>
           <p class="text-[10px] text-slate-400">${new Date(reminder.dateTime).toLocaleString()}</p>
         </div>
-        <div class="space-x-1">
-          <button onclick="toggleReminder(${reminder.id})" class="px-1.5 py-0.5 rounded ${reminder.completed ? 'bg-slate-600 text-slate-400' : 'bg-sky-600/30 text-sky-400 hover:bg-sky-600/50'}">
+        <div class="space-x-1 flex items-center">
+          <button onclick="editReminder('${reminder._id}', '${reminder.title}')" class="px-1.5 py-0.5 rounded bg-amber-600/30 text-amber-400 hover:bg-amber-600/50">✏️</button>
+          <button onclick="toggleReminder('${reminder._id}')" class="px-1.5 py-0.5 rounded ${reminder.completed ? 'bg-slate-600 text-slate-400' : 'bg-sky-600/30 text-sky-400 hover:bg-sky-600/50'}">
             ${reminder.completed ? '✓' : '🔔'}
           </button>
-          <button onclick="deleteReminder(${reminder.id})" class="px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-400 hover:bg-rose-600/50">✕</button>
+          <button onclick="deleteReminder('${reminder._id}')" class="px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-400 hover:bg-rose-600/50">✕</button>
         </div>
       </div>
     `).join('');
@@ -135,27 +140,66 @@ async function loadReminders() {
   }
 }
 
-// Acciones Tareas
+// --- ACCIONES TAREAS ---
+async function editTask(id, currentTitle) {
+  const newTitle = prompt('Editar título de la tarea:', currentTitle);
+  if (newTitle && newTitle.trim() !== '') {
+    await fetch(`/api/tasks/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: newTitle.trim() })
+    });
+    loadTasks();
+  }
+}
+
 async function toggleTask(id) {
   await fetch(`/api/tasks/${id}`, { method: 'PATCH' });
   loadTasks();
 }
+
 async function deleteTask(id) {
   await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
   loadTasks();
 }
 
-// Acciones Notas
+// --- ACCIONES NOTAS ---
+async function editNote(id, currentTitle, currentContent) {
+  const newTitle = prompt('Editar título de la nota:', currentTitle);
+  const newContent = prompt('Editar contenido de la nota:', currentContent);
+  if (newTitle && newContent) {
+    await fetch(`/api/notes/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: newTitle.trim(), content: newContent.trim() })
+    });
+    loadNotes();
+  }
+}
+
 async function deleteNote(id) {
   await fetch(`/api/notes/${id}`, { method: 'DELETE' });
   loadNotes();
 }
 
-// Acciones Recordatorios
+// --- ACCIONES RECORDATORIOS ---
+async function editReminder(id, currentTitle) {
+  const newTitle = prompt('Editar título del recordatorio:', currentTitle);
+  if (newTitle && newTitle.trim() !== '') {
+    await fetch(`/api/reminders/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: newTitle.trim() })
+    });
+    loadReminders();
+  }
+}
+
 async function toggleReminder(id) {
   await fetch(`/api/reminders/${id}`, { method: 'PATCH' });
   loadReminders();
 }
+
 async function deleteReminder(id) {
   await fetch(`/api/reminders/${id}`, { method: 'DELETE' });
   loadReminders();
