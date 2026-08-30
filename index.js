@@ -1,4 +1,7 @@
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 import { getTasks, createTask, toggleTask, deleteTask } from './src/tasks.js';
 import { getNotes, createNote, deleteNote } from './src/notes.js';
 import { getReminders, createReminder, toggleReminder, deleteReminder } from './src/reminders.js';
@@ -6,16 +9,16 @@ import { getReminders, createReminder, toggleReminder, deleteReminder } from './
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+// Configuración para servir archivos estáticos (HTML/JS/CSS)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Ruta principal
+app.use(express.json());
+app.use(express.static(__dirname));
+
+// Ruta principal: sirve la interfaz visual
 app.get('/', (req, res) => {
-  res.json({
-    app: "NEXO API",
-    status: "Activo",
-    version: "1.0.0",
-    message: "Bienvenido a tu asistente personal NEXO"
-  });
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Rutas de Tareas
