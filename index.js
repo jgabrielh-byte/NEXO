@@ -4,11 +4,11 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+dotenv.config();
+
 import Task from './models/Task.js';
 import Note from './models/Note.js';
 import Reminder from './models/Reminder.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,7 +40,7 @@ app.post('/api/tasks', async (req, res) => {
 });
 
 app.put('/api/tasks/:id', async (req, res) => {
-  const updatedTask = await Task.findByIdAndUpdate(req.id || req.params.id, req.body, { new: true });
+  const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
   res.json({ data: updatedTask });
 });
 
