@@ -1,3 +1,5 @@
+let currentTaskFilter = 'all'; // 'all', 'pending', 'completed'
+
 document.addEventListener('DOMContentLoaded', () => {
   loadTasks();
   loadNotes();
@@ -13,11 +15,16 @@ function setupEventListeners() {
     await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: titleInput.value })
+      body: JSON.stringify({ title: titleInput.value.trim() })
     });
     titleInput.value = '';
     loadTasks();
   });
+
+  // Filtros de Tareas
+  document.getElementById('filter-all').addEventListener('click', () => setTaskFilter('all'));
+  document.getElementById('filter-pending').addEventListener('click', () => setTaskFilter('pending'));
+  document.getElementById('filter-completed').addEventListener('click', () => setTaskFilter('completed'));
 
   // Crear Nota
   document.getElementById('form-note').addEventListener('submit', async (e) => {
@@ -27,7 +34,7 @@ function setupEventListeners() {
     await fetch('/api/notes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: titleInput.value, content: contentInput.value })
+      body: JSON.stringify({ title: titleInput.value.trim(), content: contentInput.value.trim() })
     });
     titleInput.value = '';
     contentInput.value = '';
@@ -42,12 +49,33 @@ function setupEventListeners() {
     await fetch('/api/reminders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: titleInput.value, dateTime: dateInput.value })
+      body: JSON.stringify({ title: titleInput.value.trim(), dateTime: dateInput.value })
     });
     titleInput.value = '';
     dateInput.value = '';
     loadReminders();
   });
+}
+
+function setTaskFilter(filter) {
+  currentTaskFilter = filter;
+  
+  // Actualizar estilos de los botones
+  const buttons = {
+    all: document.getElementById('filter-all'),
+    pending: document.getElementById('filter-pending'),
+    completed: document.getElementById('filter-completed')
+  };
+
+  Object.keys(buttons).forEach(key => {
+    if (key === filter) {
+      buttons[key].className = 'task-filter-btn px-2.5 py-1 rounded font-medium bg-slate-700 text-slate-200';
+    } else {
+      buttons[key].className = 'task-filter-btn px-2.5 py-1 rounded font-medium text-slate-400 hover:text-slate-200';
+    }
+  });
+
+  loadTasks();
 }
 
 // Cargar Tareas
@@ -56,14 +84,29 @@ async function loadTasks() {
     const res = await fetch('/api/tasks');
     const { data } = await res.json();
     const container = document.getElementById('tasks-list');
+    const counterElement = document.getElementById('task-counter');
 
-    if (!data || data.length === 0) {
-      container.innerHTML = '<p class="text-slate-500 italic text-xs">Sin tareas pendientes.</p>';
+    if (!data) return;
+
+    // Actualizar contador de pendientes
+    const pendingCount = data.filter(t => !t.completed).length;
+    counterElement.textContent = `${pendingCount} pendiente${pendingCount === 1 ? '' : 's'}`;
+
+    // Filtrar tareas según la pestaña seleccionada
+    let filteredTasks = data;
+    if (currentTaskFilter === 'pending') {
+      filteredTasks = data.filter(t => !t.completed);
+    } else if (currentTaskFilter === 'completed') {
+      filteredTasks = data.filter(t => t.completed);
+    }
+
+    if (filteredTasks.length === 0) {
+      container.innerHTML = `<p class="text-slate-500 italic text-xs py-2">No hay tareas ${currentTaskFilter === 'completed' ? 'completadas' : 'en esta vista'}.</p>`;
       return;
     }
 
     container.innerHTML = '';
-    data.forEach(task => {
+    filteredTasks.forEach(task => {
       const div = document.createElement('div');
       div.className = 'p-2 bg-slate-700/50 rounded flex justify-between items-center text-xs';
       div.innerHTML = `
