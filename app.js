@@ -12,10 +12,17 @@ function setupEventListeners() {
   document.getElementById('form-task').addEventListener('submit', async (e) => {
     e.preventDefault();
     const titleInput = document.getElementById('input-task-title');
+    const title = titleInput.value.trim();
+
+    if (!title) {
+      alert('Por favor, escribe un título para la tarea.');
+      return;
+    }
+
     await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: titleInput.value.trim() })
+      body: JSON.stringify({ title })
     });
     titleInput.value = '';
     loadTasks();
@@ -31,10 +38,18 @@ function setupEventListeners() {
     e.preventDefault();
     const titleInput = document.getElementById('input-note-title');
     const contentInput = document.getElementById('input-note-content');
+    const title = titleInput.value.trim();
+    const content = contentInput.value.trim();
+
+    if (!title || !content) {
+      alert('Por favor, completa tanto el título como el contenido de la nota.');
+      return;
+    }
+
     await fetch('/api/notes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: titleInput.value.trim(), content: contentInput.value.trim() })
+      body: JSON.stringify({ title, content })
     });
     titleInput.value = '';
     contentInput.value = '';
@@ -46,10 +61,18 @@ function setupEventListeners() {
     e.preventDefault();
     const titleInput = document.getElementById('input-reminder-title');
     const dateInput = document.getElementById('input-reminder-date');
+    const title = titleInput.value.trim();
+    const dateTime = dateInput.value;
+
+    if (!title || !dateTime) {
+      alert('Por favor, ingresa un título y selecciona una fecha y hora válidas.');
+      return;
+    }
+
     await fetch('/api/reminders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: titleInput.value.trim(), dateTime: dateInput.value })
+      body: JSON.stringify({ title, dateTime })
     });
     titleInput.value = '';
     dateInput.value = '';
@@ -145,11 +168,18 @@ async function loadNotes() {
 
     container.innerHTML = '';
     data.forEach(note => {
+      const createdDate = note.createdAt 
+        ? new Date(note.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+        : 'Hoy';
+
       const div = document.createElement('div');
       div.className = 'p-2 bg-slate-700/50 rounded flex justify-between items-start text-xs';
       div.innerHTML = `
         <div class="space-y-0.5 pr-2">
-          <h3 class="font-semibold text-slate-200">${note.title}</h3>
+          <div class="flex items-center gap-2">
+            <h3 class="font-semibold text-slate-200">${note.title}</h3>
+            <span class="text-[9px] bg-slate-600/50 text-slate-400 px-1.5 py-0.2 rounded">${createdDate}</span>
+          </div>
           <p class="text-[11px] text-slate-400">${note.content}</p>
         </div>
         <div class="space-x-1 flex items-center shrink-0">
@@ -172,22 +202,33 @@ async function loadNotes() {
 async function loadReminders() {
   try {
     const res = await fetch('/api/reminders');
-    const { data } = await res.json();
+    const result = await res.json();
+    const data = result.data || result;
     const container = document.getElementById('reminders-list');
 
-    if (!data || data.length === 0) {
+    if (!Array.isArray(data) || data.length === 0) {
       container.innerHTML = '<p class="text-slate-500 italic text-xs">Sin recordatorios.</p>';
       return;
     }
 
     container.innerHTML = '';
     data.forEach(reminder => {
+      const isExpired = new Date(reminder.dateTime) < new Date() && !reminder.completed;
+      const formattedDate = new Date(reminder.dateTime).toLocaleString('es-ES', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
       const div = document.createElement('div');
-      div.className = 'p-2 bg-slate-700/50 rounded flex justify-between items-center text-xs';
+      div.className = `p-2 ${isExpired ? 'bg-rose-950/40 border border-rose-500/30' : 'bg-slate-700/50'} rounded flex justify-between items-center text-xs`;
       div.innerHTML = `
         <div>
-          <p class="${reminder.completed ? 'line-through text-slate-500' : ''}">${reminder.title}</p>
-          <p class="text-[10px] text-slate-400">${new Date(reminder.dateTime).toLocaleString()}</p>
+          <p class="${reminder.completed ? 'line-through text-slate-500' : isExpired ? 'text-rose-300 font-medium' : ''}">${reminder.title}</p>
+          <p class="text-[10px] ${isExpired ? 'text-rose-400 font-semibold' : 'text-slate-400'}">
+            ${formattedDate} ${isExpired ? '• ⚠️ Vencido' : ''}
+          </p>
         </div>
         <div class="space-x-1 flex items-center">
           <button class="btn-edit px-1.5 py-0.5 rounded bg-amber-600/30 text-amber-400 hover:bg-amber-600/50">✏️</button>
