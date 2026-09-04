@@ -1,324 +1,76 @@
-let currentTaskFilter = 'all'; // 'all', 'pending', 'completed'
-
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   loadTasks();
   loadNotes();
   loadReminders();
   setupEventListeners();
 });
 
-function setupEventListeners() {
-  // Crear Tarea
-  document.getElementById('form-task').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const titleInput = document.getElementById('input-task-title');
-    const title = titleInput.value.trim();
-
-    if (!title) {
-      alert('Por favor, escribe un título para la tarea.');
-      return;
-    }
-// Buscador global en tiempo real
-  document.getElementById('global-search').addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase().trim();
-    filterAllContent(query);
-  });
-    await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title })
-    });
-    titleInput.value = '';
-    loadTasks();
-  });
-
-  // Filtros de Tareas
-  document.getElementById('filter-all').addEventListener('click', () => setTaskFilter('all'));
-  document.getElementById('filter-pending').addEventListener('click', () => setTaskFilter('pending'));
-  document.getElementById('filter-completed').addEventListener('click', () => setTaskFilter('completed'));
-
-  // Crear Nota
-  document.getElementById('form-note').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const titleInput = document.getElementById('input-note-title');
-    const contentInput = document.getElementById('input-note-content');
-    const title = titleInput.value.trim();
-    const content = contentInput.value.trim();
-
-    if (!title || !content) {
-      alert('Por favor, completa tanto el título como el contenido de la nota.');
-      return;
-    }
-
-    await fetch('/api/notes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content })
-    });
-    titleInput.value = '';
-    contentInput.value = '';
-    loadNotes();
-  });
-
-  // Crear Recordatorio
-  document.getElementById('form-reminder').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const titleInput = document.getElementById('input-reminder-title');
-    const dateInput = document.getElementById('input-reminder-date');
-    const title = titleInput.value.trim();
-    const dateTime = dateInput.value;
-
-    if (!title || !dateTime) {
-      alert('Por favor, ingresa un título y selecciona una fecha y hora válidas.');
-      return;
-    }
-
-    await fetch('/api/reminders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, dateTime })
-    });
-    titleInput.value = '';
-    dateInput.value = '';
-    loadReminders();
-  });
-}
-
-function setTaskFilter(filter) {
-  currentTaskFilter = filter;
+// Cargar y aplicar el tema guardado
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  const btn = document.getElementById('theme-toggle');
   
-  // Actualizar estilos de los botones
-  const buttons = {
-    all: document.getElementById('filter-all'),
-    pending: document.getElementById('filter-pending'),
-    completed: document.getElementById('filter-completed')
-  };
-
-  Object.keys(buttons).forEach(key => {
-    if (key === filter) {
-      buttons[key].className = 'task-filter-btn px-2.5 py-1 rounded font-medium bg-slate-700 text-slate-200';
-    } else {
-      buttons[key].className = 'task-filter-btn px-2.5 py-1 rounded font-medium text-slate-400 hover:text-slate-200';
-    }
-  });
-
-  loadTasks();
-}
-
-// Cargar Tareas
-async function loadTasks() {
-  try {
-    const res = await fetch('/api/tasks');
-    const { data } = await res.json();
-    const container = document.getElementById('tasks-list');
-    const counterElement = document.getElementById('task-counter');
-
-    if (!data) return;
-
-    // Actualizar contador de pendientes
-    const pendingCount = data.filter(t => !t.completed).length;
-    counterElement.textContent = `${pendingCount} pendiente${pendingCount === 1 ? '' : 's'}`;
-
-    // Filtrar tareas según la pestaña seleccionada
-    let filteredTasks = data;
-    if (currentTaskFilter === 'pending') {
-      filteredTasks = data.filter(t => !t.completed);
-    } else if (currentTaskFilter === 'completed') {
-      filteredTasks = data.filter(t => t.completed);
-    }
-
-    if (filteredTasks.length === 0) {
-      container.innerHTML = `<p class="text-slate-500 italic text-xs py-2">No hay tareas ${currentTaskFilter === 'completed' ? 'completadas' : 'en esta vista'}.</p>`;
-      return;
-    }
-
-    container.innerHTML = '';
-    filteredTasks.forEach(task => {
-      const div = document.createElement('div');
-      div.className = 'p-2 bg-slate-700/50 rounded flex justify-between items-center text-xs';
-      div.innerHTML = `
-        <span class="${task.completed ? 'line-through text-slate-500' : ''}">${task.title}</span>
-        <div class="space-x-1 flex items-center">
-          <button class="btn-edit px-1.5 py-0.5 rounded bg-amber-600/30 text-amber-400 hover:bg-amber-600/50">✏️</button>
-          <button class="btn-toggle px-1.5 py-0.5 rounded ${task.completed ? 'bg-slate-600 text-slate-400' : 'bg-emerald-600/30 text-emerald-400 hover:bg-emerald-600/50'}">
-            ${task.completed ? '✓' : '⌛'}
-          </button>
-          <button class="btn-delete px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-400 hover:bg-rose-600/50">✕</button>
-        </div>
-      `;
-
-      div.querySelector('.btn-edit').addEventListener('click', () => editTask(task._id, task.title));
-      div.querySelector('.btn-toggle').addEventListener('click', () => toggleTask(task._id));
-      div.querySelector('.btn-delete').addEventListener('click', () => deleteTask(task._id));
-
-      container.appendChild(div);
-    });
-  } catch (err) {
-    console.error('Error cargando tareas:', err);
+  if (savedTheme === 'light') {
+    document.documentElement.classList.add('light-mode');
+    if (btn) btn.textContent = '☀️';
+  } else {
+    document.documentElement.classList.remove('light-mode');
+    if (btn) btn.textContent = '🌙';
   }
 }
 
-// Cargar Notas
-async function loadNotes() {
-  try {
-    const res = await fetch('/api/notes');
-    const { data } = await res.json();
-    const container = document.getElementById('notes-list');
-
-    if (!data || data.length === 0) {
-      container.innerHTML = '<p class="text-slate-500 italic text-xs">Sin notas creadas.</p>';
-      return;
-    }
-
-    container.innerHTML = '';
-    data.forEach(note => {
-      const createdDate = note.createdAt 
-        ? new Date(note.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
-        : 'Hoy';
-
-      const div = document.createElement('div');
-      div.className = 'p-2 bg-slate-700/50 rounded flex justify-between items-start text-xs';
-      div.innerHTML = `
-        <div class="space-y-0.5 pr-2">
-          <div class="flex items-center gap-2">
-            <h3 class="font-semibold text-slate-200">${note.title}</h3>
-            <span class="text-[9px] bg-slate-600/50 text-slate-400 px-1.5 py-0.2 rounded">${createdDate}</span>
-          </div>
-          <p class="text-[11px] text-slate-400">${note.content}</p>
-        </div>
-        <div class="space-x-1 flex items-center shrink-0">
-          <button class="btn-edit px-1.5 py-0.5 rounded bg-amber-600/30 text-amber-400 hover:bg-amber-600/50">✏️</button>
-          <button class="btn-delete px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-400 hover:bg-rose-600/50">✕</button>
-        </div>
-      `;
-
-      div.querySelector('.btn-edit').addEventListener('click', () => editNote(note._id, note.title, note.content));
-      div.querySelector('.btn-delete').addEventListener('click', () => deleteNote(note._id));
-
-      container.appendChild(div);
-    });
-  } catch (err) {
-    console.error('Error cargando notas:', err);
+// Alternar entre modo oscuro y claro
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light-mode');
+  const btn = document.getElementById('theme-toggle');
+  
+  if (isLight) {
+    if (btn) btn.textContent = '☀️';
+    localStorage.setItem('theme', 'light');
+  } else {
+    if (btn) btn.textContent = '🌙';
+    localStorage.setItem('theme', 'dark');
   }
 }
 
-// Cargar Recordatorios
-async function loadReminders() {
-  try {
-    const res = await fetch('/api/reminders');
-    const result = await res.json();
-    const data = result.data || result;
-    const container = document.getElementById('reminders-list');
+// Escuchadores de eventos
+function setupEventListeners() {
+  // Buscador global en tiempo real
+  const searchInput = document.getElementById('global-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      filterAllContent(query);
+    });
+  }
 
-    if (!Array.isArray(data) || data.length === 0) {
-      container.innerHTML = '<p class="text-slate-500 italic text-xs">Sin recordatorios.</p>';
-      return;
-    }
+  // Alternar tema Claro / Oscuro
+  const themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', toggleTheme);
+  }
 
-    container.innerHTML = '';
-    data.forEach(reminder => {
-      const isExpired = new Date(reminder.dateTime) < new Date() && !reminder.completed;
-      const formattedDate = new Date(reminder.dateTime).toLocaleString('es-ES', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
+  // Formularios
+  const formTask = document.getElementById('form-task');
+  if (formTask) {
+    formTask.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('input-task-title');
+      const title = input.value.trim();
+      if (!title) return;
+
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
       });
-
-      const div = document.createElement('div');
-      div.className = `p-2 ${isExpired ? 'bg-rose-950/40 border border-rose-500/30' : 'bg-slate-700/50'} rounded flex justify-between items-center text-xs`;
-      div.innerHTML = `
-        <div>
-          <p class="${reminder.completed ? 'line-through text-slate-500' : isExpired ? 'text-rose-300 font-medium' : ''}">${reminder.title}</p>
-          <p class="text-[10px] ${isExpired ? 'text-rose-400 font-semibold' : 'text-slate-400'}">
-            ${formattedDate} ${isExpired ? '• ⚠️ Vencido' : ''}
-          </p>
-        </div>
-        <div class="space-x-1 flex items-center">
-          <button class="btn-edit px-1.5 py-0.5 rounded bg-amber-600/30 text-amber-400 hover:bg-amber-600/50">✏️</button>
-          <button class="btn-toggle px-1.5 py-0.5 rounded ${reminder.completed ? 'bg-slate-600 text-slate-400' : 'bg-sky-600/30 text-sky-400 hover:bg-sky-600/50'}">
-            ${reminder.completed ? '✓' : '🔔'}
-          </button>
-          <button class="btn-delete px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-400 hover:bg-rose-600/50">✕</button>
-        </div>
-      `;
-
-      div.querySelector('.btn-edit').addEventListener('click', () => editReminder(reminder._id, reminder.title));
-      div.querySelector('.btn-toggle').addEventListener('click', () => toggleReminder(reminder._id));
-      div.querySelector('.btn-delete').addEventListener('click', () => deleteReminder(reminder._id));
-
-      container.appendChild(div);
+      input.value = '';
+      loadTasks();
     });
-  } catch (err) {
-    console.error('Error cargando recordatorios:', err);
   }
 }
 
-// --- ACCIONES TAREAS ---
-async function editTask(id, currentTitle) {
-  const newTitle = prompt('Editar título de la tarea:', currentTitle);
-  if (newTitle !== null && newTitle.trim() !== '') {
-    await fetch(`/api/tasks/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newTitle.trim() })
-    });
-    loadTasks();
-  }
-}
-
-async function toggleTask(id) {
-  await fetch(`/api/tasks/${id}`, { method: 'PATCH' });
-  loadTasks();
-}
-
-async function deleteTask(id) {
-  await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-  loadTasks();
-}
-
-// --- ACCIONES NOTAS ---
-async function editNote(id, currentTitle, currentContent) {
-  const newTitle = prompt('Editar título de la nota:', currentTitle);
-  if (newTitle === null) return;
-  const newContent = prompt('Editar contenido de la nota:', currentContent);
-  if (newContent === null) return;
-
-  await fetch(`/api/notes/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title: newTitle.trim(), content: newContent.trim() })
-  });
-  loadNotes();
-}
-
-async function deleteNote(id) {
-  await fetch(`/api/notes/${id}`, { method: 'DELETE' });
-  loadNotes();
-}
-
-// --- ACCIONES RECORDATORIOS ---
-async function editReminder(id, currentTitle) {
-  const newTitle = prompt('Editar título del recordatorio:', currentTitle);
-  if (newTitle !== null && newTitle.trim() !== '') {
-    await fetch(`/api/reminders/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newTitle.trim() })
-    });
-    loadReminders();
-  }
-}
-
-async function toggleReminder(id) {
-  await fetch(`/api/reminders/${id}`, { method: 'PATCH' });
-  loadReminders();
-}
-
-async function deleteReminder(id) {
-  await fetch(`/api/reminders/${id}`, { method: 'DELETE' });
-  loadReminders();
-}
 // Filtrar todo el contenido visualmente
 function filterAllContent(query) {
   const items = document.querySelectorAll('#tasks-list > div, #notes-list > div, #reminders-list > div');
@@ -331,4 +83,66 @@ function filterAllContent(query) {
       item.classList.add('hidden');
     }
   });
+}
+
+// Cargar Tareas desde la API
+async function loadTasks() {
+  try {
+    const res = await fetch('/api/tasks');
+    const tasks = await res.json();
+    const tasksList = document.getElementById('tasks-list');
+    if (!tasksList) return;
+
+    tasksList.innerHTML = tasks.map(task => `
+      <div class="p-2 bg-slate-900/60 rounded border border-slate-700/60 flex justify-between items-center text-xs">
+        <span class="${task.completed ? 'line-through text-slate-500' : 'text-slate-200'}">${task.title}</span>
+      </div>
+    `).join('');
+    
+    const counter = document.getElementById('task-counter');
+    if (counter) {
+      const pending = tasks.filter(t => !t.completed).length;
+      counter.textContent = `${pending} pendiente${pending !== 1 ? 's' : ''}`;
+    }
+  } catch (err) {
+    console.error('Error al cargar tareas:', err);
+  }
+}
+
+// Cargar Notas desde la API
+async function loadNotes() {
+  try {
+    const res = await fetch('/api/notes');
+    const notes = await res.json();
+    const notesList = document.getElementById('notes-list');
+    if (!notesList) return;
+
+    notesList.innerHTML = notes.map(note => `
+      <div class="p-2 bg-slate-900/60 rounded border border-slate-700/60 text-xs space-y-1">
+        <h4 class="font-bold text-amber-400">${note.title}</h4>
+        <p class="text-slate-300">${note.content}</p>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Error al cargar notas:', err);
+  }
+}
+
+// Cargar Recordatorios desde la API
+async function loadReminders() {
+  try {
+    const res = await fetch('/api/reminders');
+    const reminders = await res.json();
+    const remindersList = document.getElementById('reminders-list');
+    if (!remindersList) return;
+
+    remindersList.innerHTML = reminders.map(r => `
+      <div class="p-2 bg-slate-900/60 rounded border border-slate-700/60 text-xs space-y-1">
+        <p class="text-sky-300 font-medium">${r.title}</p>
+        <span class="text-slate-400 text-[10px]">${new Date(r.date).toLocaleString()}</span>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Error al cargar recordatorios:', err);
+  }
 }

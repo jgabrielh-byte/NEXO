@@ -1,5 +1,47 @@
 <!DOCTYPE html>
 <html lang="es">
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXO - Asistente Personal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Estilos para el Modo Claro -->
+  <style>
+    html.light-mode body {
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+
+    html.light-mode .bg-slate-800,
+    html.light-mode .bg-slate-900,
+    html.light-mode .bg-slate-800\/80,
+    html.light-mode .bg-slate-900\/60 {
+      background-color: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+
+    html.light-mode .bg-slate-700\/50,
+    html.light-mode .bg-slate-700 {
+      background-color: #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+
+    html.light-mode input,
+    html.light-mode textarea {
+      background-color: #f1f5f9 !important;
+      color: #0f172a !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    html.light-mode p,
+    html.light-mode h3,
+    html.light-mode span {
+      color: #334155;
+    }
+  </style>
+</head>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,9 +56,9 @@
       <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400">NEXO</h1>
       <p class="text-slate-400">Tu centro de control personal para tareas, notas y recordatorios.</p>
     </header>
-<!-- Barra de Búsqueda Global -->
-<div class="max-w-md mx-auto my-6">
-  <div class="relative">
+<!-- Barra de Búsqueda Global y Selector de Tema -->
+<div class="max-w-md mx-auto my-6 flex items-center gap-3">
+  <div class="relative flex-1">
     <input 
       type="text" 
       id="global-search" 
@@ -24,6 +66,13 @@
       class="w-full px-4 py-2 text-sm bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
     >
   </div>
+  <button 
+    id="theme-toggle" 
+    class="p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 hover:bg-slate-700 transition-colors shrink-0" 
+    title="Cambiar tema"
+  >
+    🌙
+  </button>
 </div>
     <!-- Panel de Módulos -->
     <main class="grid md:grid-cols-3 gap-6">
