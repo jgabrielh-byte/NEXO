@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
 });
 
-// Cargar y aplicar el tema guardado
+// --- TEMA CLARO / OSCURO ---
 function initTheme() {
   const savedTheme = localStorage.getItem('theme') || 'dark';
   const btn = document.getElementById('theme-toggle');
@@ -20,7 +20,6 @@ function initTheme() {
   }
 }
 
-// Alternar entre modo oscuro y claro
 function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light-mode');
   const btn = document.getElementById('theme-toggle');
@@ -34,9 +33,9 @@ function toggleTheme() {
   }
 }
 
-// Escuchadores de eventos
+// --- ESCUCHADORES DE EVENTOS ---
 function setupEventListeners() {
-  // Buscador global en tiempo real
+  // Buscador global
   const searchInput = document.getElementById('global-search');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
@@ -45,33 +44,74 @@ function setupEventListeners() {
     });
   }
 
-  // Alternar tema Claro / Oscuro
+  // Alternar tema
   const themeBtn = document.getElementById('theme-toggle');
   if (themeBtn) {
     themeBtn.addEventListener('click', toggleTheme);
   }
 
-  // Formularios
+  // Formulario Tareas
   const formTask = document.getElementById('form-task');
   if (formTask) {
-    formTask.addEventListener('submit', async (e) => {
+    formTask.addEventListener('submit', (e) => {
       e.preventDefault();
       const input = document.getElementById('input-task-title');
       const title = input.value.trim();
       if (!title) return;
 
-      await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title })
-      });
+      const tasks = JSON.parse(localStorage.getItem('nexo_tasks') || '[]');
+      tasks.push({ id: Date.now().toString(), title, completed: false });
+      localStorage.setItem('nexo_tasks', JSON.stringify(tasks));
+
       input.value = '';
       loadTasks();
     });
   }
+
+  // Formulario Notas
+  const formNote = document.getElementById('form-note');
+  if (formNote) {
+    formNote.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const titleInput = document.getElementById('input-note-title');
+      const contentInput = document.getElementById('input-note-content');
+      const title = titleInput.value.trim();
+      const content = contentInput.value.trim();
+      if (!title || !content) return;
+
+      const notes = JSON.parse(localStorage.getItem('nexo_notes') || '[]');
+      notes.push({ id: Date.now().toString(), title, content });
+      localStorage.setItem('nexo_notes', JSON.stringify(notes));
+
+      titleInput.value = '';
+      contentInput.value = '';
+      loadNotes();
+    });
+  }
+
+  // Formulario Recordatorios
+  const formReminder = document.getElementById('form-reminder');
+  if (formReminder) {
+    formReminder.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const titleInput = document.getElementById('input-reminder-title');
+      const dateInput = document.getElementById('input-reminder-date');
+      const title = titleInput.value.trim();
+      const date = dateInput.value;
+      if (!title || !date) return;
+
+      const reminders = JSON.parse(localStorage.getItem('nexo_reminders') || '[]');
+      reminders.push({ id: Date.now().toString(), title, date });
+      localStorage.setItem('nexo_reminders', JSON.stringify(reminders));
+
+      titleInput.value = '';
+      dateInput.value = '';
+      loadReminders();
+    });
+  }
 }
 
-// Filtrar todo el contenido visualmente
+// --- BUSCADOR ---
 function filterAllContent(query) {
   const items = document.querySelectorAll('#tasks-list > div, #notes-list > div, #reminders-list > div');
 
@@ -85,64 +125,76 @@ function filterAllContent(query) {
   });
 }
 
-// Cargar Tareas desde la API
-async function loadTasks() {
-  try {
-    const res = await fetch('/api/tasks');
-    const tasks = await res.json();
-    const tasksList = document.getElementById('tasks-list');
-    if (!tasksList) return;
+// --- CARGAR Y RENDERIZAR DATOS DESDE LOCALSTORAGE ---
+function loadTasks() {
+  const tasks = JSON.parse(localStorage.getItem('nexo_tasks') || '[]');
+  const tasksList = document.getElementById('tasks-list');
+  if (!tasksList) return;
 
-    tasksList.innerHTML = tasks.map(task => `
-      <div class="p-2 bg-slate-900/60 rounded border border-slate-700/60 flex justify-between items-center text-xs">
-        <span class="${task.completed ? 'line-through text-slate-500' : 'text-slate-200'}">${task.title}</span>
-      </div>
-    `).join('');
-    
-    const counter = document.getElementById('task-counter');
-    if (counter) {
-      const pending = tasks.filter(t => !t.completed).length;
-      counter.textContent = `${pending} pendiente${pending !== 1 ? 's' : ''}`;
-    }
-  } catch (err) {
-    console.error('Error al cargar tareas:', err);
+  tasksList.innerHTML = tasks.map(task => `
+    <div class="p-2 bg-slate-900/60 rounded border border-slate-700/60 flex justify-between items-center text-xs">
+      <span class="${task.completed ? 'line-through text-slate-500' : 'text-slate-200'}">${task.title}</span>
+      <button onclick="deleteTask('${task.id}')" class="text-rose-400 hover:text-rose-300 ml-2">✕</button>
+    </div>
+  `).join('');
+  
+  const counter = document.getElementById('task-counter');
+  if (counter) {
+    const pending = tasks.filter(t => !t.completed).length;
+    counter.textContent = `${pending} pendiente${pending !== 1 ? 's' : ''}`;
   }
 }
 
-// Cargar Notas desde la API
-async function loadNotes() {
-  try {
-    const res = await fetch('/api/notes');
-    const notes = await res.json();
-    const notesList = document.getElementById('notes-list');
-    if (!notesList) return;
+function loadNotes() {
+  const notes = JSON.parse(localStorage.getItem('nexo_notes') || '[]');
+  const notesList = document.getElementById('notes-list');
+  if (!notesList) return;
 
-    notesList.innerHTML = notes.map(note => `
-      <div class="p-2 bg-slate-900/60 rounded border border-slate-700/60 text-xs space-y-1">
+  notesList.innerHTML = notes.map(note => `
+    <div class="p-2 bg-slate-900/60 rounded border border-slate-700/60 text-xs space-y-1">
+      <div class="flex justify-between items-center">
         <h4 class="font-bold text-amber-400">${note.title}</h4>
-        <p class="text-slate-300">${note.content}</p>
+        <button onclick="deleteNote('${note.id}')" class="text-rose-400 hover:text-rose-300">✕</button>
       </div>
-    `).join('');
-  } catch (err) {
-    console.error('Error al cargar notas:', err);
-  }
+      <p class="text-slate-300">${note.content}</p>
+    </div>
+  `).join('');
 }
 
-// Cargar Recordatorios desde la API
-async function loadReminders() {
-  try {
-    const res = await fetch('/api/reminders');
-    const reminders = await res.json();
-    const remindersList = document.getElementById('reminders-list');
-    if (!remindersList) return;
+function loadReminders() {
+  const reminders = JSON.parse(localStorage.getItem('nexo_reminders') || '[]');
+  const remindersList = document.getElementById('reminders-list');
+  if (!remindersList) return;
 
-    remindersList.innerHTML = reminders.map(r => `
-      <div class="p-2 bg-slate-900/60 rounded border border-slate-700/60 text-xs space-y-1">
+  remindersList.innerHTML = reminders.map(r => `
+    <div class="p-2 bg-slate-900/60 rounded border border-slate-700/60 text-xs space-y-1">
+      <div class="flex justify-between items-center">
         <p class="text-sky-300 font-medium">${r.title}</p>
-        <span class="text-slate-400 text-[10px]">${new Date(r.date).toLocaleString()}</span>
+        <button onclick="deleteReminder('${r.id}')" class="text-rose-400 hover:text-rose-300">✕</button>
       </div>
-    `).join('');
-  } catch (err) {
-    console.error('Error al cargar recordatorios:', err);
-  }
+      <span class="text-slate-400 text-[10px]">${new Date(r.date).toLocaleString()}</span>
+    </div>
+  `).join('');
+}
+
+// --- ELIMINAR DATOS ---
+function deleteTask(id) {
+  let tasks = JSON.parse(localStorage.getItem('nexo_tasks') || '[]');
+  tasks = tasks.filter(t => t.id !== id);
+  localStorage.setItem('nexo_tasks', JSON.stringify(tasks));
+  loadTasks();
+}
+
+function deleteNote(id) {
+  let notes = JSON.parse(localStorage.getItem('nexo_notes') || '[]');
+  notes = notes.filter(n => n.id !== id);
+  localStorage.setItem('nexo_notes', JSON.stringify(notes));
+  loadNotes();
+}
+
+function deleteReminder(id) {
+  let reminders = JSON.parse(localStorage.getItem('nexo_reminders') || '[]');
+  reminders = reminders.filter(r => r.id !== id);
+  localStorage.setItem('nexo_reminders', JSON.stringify(reminders));
+  loadReminders();
 }
