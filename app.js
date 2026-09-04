@@ -18,7 +18,11 @@ function setupEventListeners() {
       alert('Por favor, escribe un título para la tarea.');
       return;
     }
-
+// Buscador global en tiempo real
+  document.getElementById('global-search').addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    filterAllContent(query);
+  });
     await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -314,4 +318,17 @@ async function toggleReminder(id) {
 async function deleteReminder(id) {
   await fetch(`/api/reminders/${id}`, { method: 'DELETE' });
   loadReminders();
+}
+// Filtrar todo el contenido visualmente
+function filterAllContent(query) {
+  const items = document.querySelectorAll('#tasks-list > div, #notes-list > div, #reminders-list > div');
+
+  items.forEach(item => {
+    const text = item.textContent.toLowerCase();
+    if (text.includes(query)) {
+      item.classList.remove('hidden');
+    } else {
+      item.classList.add('hidden');
+    }
+  });
 }
